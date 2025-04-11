@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    volumes:
+      - ./backend/emoji.db:/app/emoji.db
+
+networks:
+  emoji-network:
+    driver: bridge 

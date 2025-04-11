@@ -1,0 +1,283 @@
+import React, { useState, useEffect } from 'react';
+import { Card, Input, Button, Select, message, Typography, Space, Modal, Form, InputNumber, Progress, Row, Col } from 'antd';
+import axios from 'axios';
+
+const { Title, Text } = Typography;
+const { Option } = Select;
+
+function Game() {
+  const [currentWord, setCurrentWord] = useState(null);
+  const [guess, setGuess] = useState('');
+  const [difficulty, setDifficulty] = useState('1');
+  const [guessCount, setGuessCount] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3); // 默认3条命
+  const [maxLives, setMaxLives] = useState(3); // 最大生命值，可配置
+  const [isNameModalVisible, setIsNameModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [gameSession, setGameSession] = useState(null);
+  const [wordsAnswered, setWordsAnswered] = useState(0);
+
+  // 初始化游戏会话
+  useEffect(() => {
+    const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+    setGameSession(sessionId);
+  }, []);
+
+  // 获取随机词语
+  const fetchRandomWord = async () => {
+    try {
+      const response = await axios.get(`/api/words/random?difficulty=${difficulty}`);
+      setCurrentWord(response.data);
+      setGuess('');
+      setShowAnswer(false);
+    } catch (error) {
+      message.error('获取题目失败');
+    }
+  };
+
+  // 初始化游戏
+  useEffect(() => {
+    if (lives > 0) {
+      fetchRandomWord();
+    }
+  }, [difficulty, lives]);
+
+  // 提交猜测
+  const handleSubmit = async () => {
+    if (!guess.trim()) {
+      message.warning('请输入猜测的词语');
+      return;
+    }
+
+    try {
+      const response = await axios.post('/api/game/guess', {
+        word_id: currentWord.id,
+        guess: guess.trim(),
+        user_id: gameSession,
+        guess_time: guessCount + 1,
+      });
+
+      setGuessCount(guessCount + 1);
+      setShowAnswer(true);
+
+      if (response.data.is_correct) {
+        message.success('恭喜你猜对了！');
+        // 计算得分：难度 * 10
+        const newScore = score + (parseInt(difficulty) * 10);
+        setScore(newScore);
+        setWordsAnswered(wordsAnswered + 1);
+        // 延迟获取下一题
+        setTimeout(() => {
+          fetchRandomWord();
+        }, 1500);
+      } else {
+        message.error('猜错了，正确答案是：' + response.data.answer);
+        // 消耗一条命
+        const newLives = lives - 1;
+        setLives(newLives);
+        
+        if (newLives <= 0) {
+          // 游戏结束，显示名字输入框
+          setGameOver(true);
+          setIsNameModalVisible(true);
+        } else {
+          // 延迟获取下一题
+          setTimeout(() => {
+            fetchRandomWord();
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      message.error('提交答案失败');
+    }
+  };
+
+  // 跳过当前题目
+  const handleSkip = () => {
+    // 消耗一条命
+    const newLives = lives - 1;
+    setLives(newLives);
+    
+    if (newLives <= 0) {
+      // 游戏结束，显示名字输入框
+      setGameOver(true);
+      setIsNameModalVisible(true);
+    } else {
+      message.info('已跳过，正确答案是：' + currentWord.word);
+      setShowAnswer(true);
+      // 延迟获取下一题
+      setTimeout(() => {
+        fetchRandomWord();
+      }, 1500);
+    }
+  };
+
+  // 重置游戏
+  const resetGame = () => {
+    setLives(maxLives);
+    setScore(0);
+    setGuessCount(0);
+    setGameOver(false);
+    setWordsAnswered(0);
+    fetchRandomWord();
+  };
+
+  // 提交分数到排行榜
+  const handleNameSubmit = async (values) => {
+    try {
+      await axios.post('/api/leaderboard', {
+        player_name: values.playerName,
+        score: score,
+        difficulty: parseInt(difficulty),
+      });
+      
+      message.success('成功提交得分到排行榜！');
+      setIsNameModalVisible(false);
+      resetGame();
+    } catch (error) {
+      message.error('提交排行榜失败');
+    }
+  };
+
+  // 更改最大生命值
+  const handleLivesChange = (value) => {
+    setMaxLives(value);
+    setLives(value);
+  };
+
+  return (
+    <Card title="Emoji猜词游戏" style={{ maxWidth: 600, margin: '0 auto' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Row gutter={16} align="middle">
+          <Col xs={12} sm={8}>
+            <Text>难度：</Text>
+            <Select
+              value={difficulty}
+              style={{ width: '90%' }}
+              onChange={setDifficulty}
+              disabled={!gameOver && lives > 0}
+            >
+              <Option value="1">简单</Option>
+              <Option value="2">中等</Option>
+              <Option value="3">困难</Option>
+            </Select>
+          </Col>
+          <Col xs={12} sm={8}>
+            <Text>生命值：</Text>
+            <InputNumber
+              min={1}
+              max={10}
+              value={maxLives}
+              onChange={handleLivesChange}
+              disabled={!gameOver && lives > 0}
+              style={{ width: '60%' }}
+            />
+          </Col>
+          <Col xs={24} sm={8}>
+            <Row>
+              <Col span={24}>
+                <Progress 
+                  percent={lives / maxLives * 100} 
+                  status={lives <= 1 ? "exception" : "active"}
+                  format={() => `${lives}/${maxLives}`}
+                  size="small"
+                />
+              </Col>
+            </Row>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col span={24} style={{ textAlign: 'center' }}>
+            <Text strong>当前得分: {score}</Text>
+            <br />
+            <Text type="secondary">已答题数: {wordsAnswered}</Text>
+          </Col>
+        </Row>
+
+        {currentWord && lives > 0 && (
+          <div style={{ textAlign: 'center' }}>
+            <Title level={1} style={{ fontSize: '72px', marginBottom: '24px' }}>{currentWord.emoji}</Title>
+            {showAnswer && (
+              <Text type="secondary" style={{ fontSize: '18px' }}>正确答案：{currentWord.word}</Text>
+            )}
+          </div>
+        )}
+
+        {lives <= 0 ? (
+          <div style={{ textAlign: 'center' }}>
+            <Title level={3}>游戏结束</Title>
+            <Text>你的最终得分：{score}</Text>
+            <div style={{ marginTop: '20px' }}>
+              <Button type="primary" onClick={() => setIsNameModalVisible(true)}>
+                提交得分
+              </Button>
+              <Button style={{ marginLeft: '10px' }} onClick={resetGame}>
+                重新开始
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Input
+              placeholder="请输入你猜测的词语"
+              value={guess}
+              onChange={(e) => setGuess(e.target.value)}
+              disabled={showAnswer}
+              onPressEnter={handleSubmit}
+              size="large"
+            />
+
+            <Space>
+              <Button
+                type="primary"
+                onClick={handleSubmit}
+                disabled={showAnswer}
+                size="large"
+              >
+                提交
+              </Button>
+              <Button
+                onClick={handleSkip}
+                disabled={showAnswer}
+                size="large"
+              >
+                跳过
+              </Button>
+            </Space>
+          </>
+        )}
+      </Space>
+
+      <Modal
+        title="提交得分"
+        open={isNameModalVisible}
+        onCancel={() => setIsNameModalVisible(false)}
+        footer={null}
+      >
+        <Form form={form} onFinish={handleNameSubmit} layout="vertical">
+          <Form.Item
+            name="playerName"
+            label="请输入你的名字"
+            rules={[{ required: true, message: '请输入名字!' }]}
+          >
+            <Input placeholder="输入名字" />
+          </Form.Item>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <Text strong>最终得分: {score}</Text>
+          </div>
+          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
+            <Button type="primary" htmlType="submit">
+              提交
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Card>
+  );
+}
+
+export default Game; 

@@ -1,0 +1,131 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  padding: 0 20px;
+  margin-top: 64px;
+  flex: 1;
+}
+
+.site-layout-content {
+  min-height: 280px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 4px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.footer {
+  text-align: center;
+  padding: 12px 50px;
+}
+
+.header {
+  position: fixed;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  float: left;
+  /* width: 120px; */
+  /* height: 31px; */
+  margin: 16px 24px 16px 0;
+  background: rgba(255, 255, 255, 0.3);
+  background-image: url('../assets/logo.png');
+}
+
+.ant-row-rtl .logo {
+  float: right;
+  margin: 16px 0 16px 24px;
+}
+
+/* 桌面和移动菜单样式 */
+.desktop-menu {
+  display: none;
+}
+
+.mobile-menu {
+  display: block;
+}
+
+/* 游戏卡片样式 */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 统计卡片样式 */
+.ant-statistic {
+  text-align: center;
+}
+
+/* 排行榜样式 */
+.ant-table-wrapper {
+  overflow-x: auto;
+}
+
+/* 响应式布局 */
+@media (min-width: 768px) {
+  .main-content {
+    padding: 0 50px;
+  }
+  
+  .desktop-menu {
+    display: block;
+  }
+  
+  .mobile-menu {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .site-layout-content {
+    padding: 16px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .ant-card {
+    margin: 8px 0;
+  }
+  
+  .main-content {
+    margin-top: 50px;
+  }
+  
+  /* 缩小表格内容字体大小 */
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  /* 调整按钮大小 */
+  .ant-btn {
+    padding: 0 8px;
+    height: 32px;
+  }
+  
+  /* 调整输入框大小 */
+  .ant-input {
+    padding: 4px 11px;
+  }
+  
+  /* 缩小菜单项文字 */
+  .ant-menu-item {
+    padding: 0 14px;
+  }
+  
+  /* 调整emoji大小 */
+  h1.ant-typography {
+    font-size: 48px !important;
+    margin-bottom: 12px !important;
+  }
+} 

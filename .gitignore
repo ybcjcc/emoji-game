@@ -1,0 +1,5 @@
+.idea/
+.cursor/
+frontend/node_modules
+backend/main
+backend/main.exe
