@@ -10,6 +10,7 @@ RUN npm run build
 FROM golang:1.21-alpine AS backend-builder
 WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
+ENV GOPROXY=https://goproxy.io,https://goproxy.cn,direct
 RUN go mod download
 COPY backend/ .
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
@@ -25,4 +26,4 @@ COPY --from=backend-builder /app/main .
 COPY backend/emoji.db .
 
 EXPOSE 8080
-CMD ["./main"] 
+CMD ["./main"]
